@@ -23,85 +23,54 @@ body{margin:0; background:#05070a; color:#fff; overflow-x:hidden}
 .results{padding:18px 4%; max-width:600px; margin:0 auto}
 .card{background:#0e121c; border:1px solid #1a2030; padding:12px 14px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center}
 .found{background:#00ff88; color:#000; font-size:10px; font-weight:800; padding:3px 8px; border-radius:20px}
-.pay{margin-top:25px; background:linear-gradient(180deg,#101a14,#0e121c); border:1px solid #00ff8850; border-radius:16px; padding:18px; text-align:center}
 </style>
 </head>
 <body>
 <div class="nav"><div class="logo">GHOST<span>TRACE</span></div><div style="font-size:10px; color:#00ff88; border:1px solid #00ff8840; padding:4px 8px; border-radius:20px">● LIVE • KUMASI NODE</div></div>
-
 <div class="globe-section">
 <canvas id="globeCanvas"></canvas>
 <div class="title">Trace Any<br><span>Digital Footprint</span></div>
 <p class="sub">Mobile OSINT engine. Username, email & domain scan from 100% public sources. Built in Ghana.</p>
-
 <div class="tabs">
 <div class="tab active" id="t-u" onclick="switchTab('username')">USER</div>
 <div class="tab" id="t-e" onclick="switchTab('email')">EMAIL</div>
 <div class="tab" id="t-d" onclick="switchTab('domain')">DOMAIN</div>
 </div>
-
 <div class="search">
 <input id="q" placeholder="e.g. shattawale">
 <button onclick="scan()">SCAN</button>
 </div>
 </div>
-
 <div class="results" id="results">
 <div style="text-align:center; padding:25px; color:#2a344a; border:1px dashed #1a2030; border-radius:12px; font-size:13px">🌍 Enter username and tap SCAN<br>Globe will search 10 platforms live</div>
-<div class="pay">
-<h3 style="margin:0; font-size:16px">Get Full PDF Report - GH₵ 50</h3>
-<p style="color:#5a667d; font-size:12px; margin:6px 0 12px">Includes risk score + breach check + all links</p>
-<button style="width:100%; background:#00ff88; border:none; padding:12px; border-radius:10px; font-weight:800" onclick="alert('Add Paystack link here: paystack.com/pay/ghosttrace')">PAY WITH MOMO</button>
 </div>
-</div>
-
 <script>
-// Simple Globe Animation
-const canvas = document.getElementById('globeCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = 260; canvas.height = 260;
-let angle = 0;
-function drawGlobe(){
-ctx.clearRect(0,0,260,260);
-ctx.beginPath(); ctx.arc(130,130,100,0,Math.PI*2); ctx.strokeStyle='#1e283c'; ctx.lineWidth=1; ctx.stroke();
-ctx.fillStyle='#0a0f18'; ctx.fill();
-// grid lines
-for(let i=0;i<12;i++){
-let x = 130 + Math.sin(angle + i*0.5)*100;
-ctx.beginPath(); ctx.moveTo(x,30); ctx.lineTo(x,230); ctx.strokeStyle='#1e283c'; ctx.lineWidth=0.5; ctx.stroke();
-}
-ctx.beginPath(); ctx.arc(130,130,6,0,Math.PI*2); ctx.fillStyle='#00ff88'; ctx.shadowBlur=15; ctx.shadowColor='#00ff88'; ctx.fill(); ctx.shadowBlur=0;
-angle+=0.01; requestAnimationFrame(drawGlobe);
-}
-drawGlobe();
-
+const canvas=document.getElementById('globeCanvas');const ctx=canvas.getContext('2d');canvas.width=260;canvas.height=260;let angle=0;
+function drawGlobe(){ctx.clearRect(0,0,260,260);ctx.beginPath();ctx.arc(130,130,100,0,Math.PI*2);ctx.strokeStyle='#1e283c';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#0a0f18';ctx.fill();for(let i=0;i<12;i++){let x=130+Math.sin(angle+i*0.5)*100;ctx.beginPath();ctx.moveTo(x,30);ctx.lineTo(x,230);ctx.strokeStyle='#1e283c';ctx.lineWidth=0.5;ctx.stroke();}ctx.beginPath();ctx.arc(130,130,6,0,Math.PI*2);ctx.fillStyle='#00ff88';ctx.shadowBlur=15;ctx.shadowColor='#00ff88';ctx.fill();ctx.shadowBlur=0;angle+=0.01;requestAnimationFrame(drawGlobe);}drawGlobe();
 let mode='username';
-function switchTab(m){
-mode=m;
-document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-document.getElementById('t-'+m[0]).classList.add('active');
-document.getElementById('q').placeholder = m==='username'? 'e.g. shattawale' : m==='email'? 'e.g. kwame@gmail.com' : 'e.g. mtn.com.gh';
-}
-
+function switchTab(m){mode=m;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('t-'+m[0]).classList.add('active');document.getElementById('q').placeholder=m==='username'?'e.g. shattawale':m==='email'?'e.g. kwame@gmail.com':'e.g. mtn.com.gh';}
 async function scan(){
-let v=document.getElementById('q').value.trim();
-if(!v) return alert('Enter username');
+let v=document.getElementById('q').value.trim();if(!v)return alert('Enter value');
 document.getElementById('results').innerHTML='<p style="text-align:center; color:#00ff88">🛰️ Scanning public web for '+v+'...</p>';
 try{
-let res=await fetch('/api/'+mode+'/'+(mode==='username'?v:v));
-let d=await res.json();
+let res=await fetch('/api/'+mode+'/'+encodeURIComponent(v));let d=await res.json();
 if(mode==='username'){
 let html=`<div style="display:flex; gap:8px; margin-bottom:12px"><div style="flex:1; background:#0e121c; border:1px solid #1a2030; padding:10px; border-radius:10px"><div style="font-size:10px; color:#5a667d">FOUND</div><b style="color:#00ff88">${d.total_found} ACCOUNTS</b></div><div style="flex:1; background:#0e121c; border:1px solid #1a2030; padding:10px; border-radius:10px"><div style="font-size:10px; color:#5a667d">RISK</div><b style="color:${d.total_found>5?'#ff4444':'#00ff88'}">${d.total_found>5?'HIGH':'LOW'}</b></div></div>`;
-d.results.forEach(r=>{
-html+=`<div class="card"><div><b style="font-size:13px">${r.platform}</b><div style="font-size:11px; color:#4a5570">${r.url}</div></div><div><span class="${r.status==='FOUND'?'found':''}" style="${r.status!=='FOUND'?'font-size:11px; color:#2a344a':''}">${r.status}</span></div></div>`;
-});
-html+=`<button style="width:100%; margin-top:12px; background:#00ff88; border:none; padding:12px; border-radius:10px; font-weight:800" onclick="window.print()">⬇ DOWNLOAD REPORT</button>`;
+d.results.forEach(r=>{html+=`<div class="card"><div><b style="font-size:13px">${r.platform}</b><div style="font-size:11px; color:#4a5570; overflow:hidden; text-overflow:ellipsis; max-width:200px">${r.url}</div></div><div><span class="${r.status==='FOUND'?'found':''}" style="${r.status!=='FOUND'?'font-size:11px; color:#2a344a':''}">${r.status}</span></div></div>`;});
+document.getElementById('results').innerHTML=html;
+}else if(mode==='email'){
+let html=`<div style="text-align:center; margin-bottom:15px"><img src="${d.gravatar_url}" style="width:70px; height:70px; border-radius:50%; border:2px solid #00ff88"><div style="margin-top:8px; font-size:13px">${d.email}</div><div style="font-size:10px; color:#ff4444; background:#1a1010; display:inline-block; padding:3px 8px; border-radius:20px; margin-top:5px">RISK: ${d.risk}</div></div>`;
+d.footprints.forEach(f=>{html+=`<div class="card" onclick="window.open('${f.url}','_blank')" style="cursor:pointer"><div><b style="font-size:13px">${f.platform}</b><div style="font-size:11px; color:#5a667d">${f.desc}</div></div><div style="color:#00ff88">↗</div></div>`;});
+html+=`<div style="margin-top:15px; background:#0e121c; border:1px solid #1a2030; padding:12px; border-radius:10px; font-size:11px; color:#5a667d">💡 Tap any card to open public OSINT source. All checks are from legal public sources only.</div>`;
 document.getElementById('results').innerHTML=html;
 }else{
-document.getElementById('results').innerHTML='<pre style="background:#0e121c; padding:12px; border-radius:10px; font-size:12px; overflow:auto">'+JSON.stringify(d,null,2)+'</pre>';
+let html=`<div class="card"><div><b>Domain: ${d.domain}</b><div style="font-size:12px; color:#5a667d">IP: ${d.ip}</div></div></div>`;
+html+=`<div class="card" onclick="window.open('${d.host_info}','_blank')"><div><b>WHOIS Lookup</b><div style="font-size:11px; color:#5a667d">Check domain registration</div></div><div>↗</div></div>`;
+html+=`<div class="card" onclick="window.open('${d.shodan}','_blank')"><div><b>Shodan Search</b><div style="font-size:11px; color:#5a667d">Find exposed services</div></div><div>↗</div></div>`;
+document.getElementById('results').innerHTML=html;
 }
 }catch(e){document.getElementById('results').innerHTML='Error: '+e;}
 }
 </script>
 </body>
-  </html>
+</html>
