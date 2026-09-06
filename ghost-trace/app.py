@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, render_template
-import requests, os, hashlib, socket, datetime
+import requests, os, hashlib, socket, urllib.parse
 
 app = Flask(__name__)
 SITES = {"Instagram":"https://www.instagram.com/{}","TikTok":"https://www.tiktok.com/@{}","X":"https://twitter.com/{}","GitHub":"https://github.com/{}","YouTube":"https://www.youtube.com/@{}","Reddit":"https://www.reddit.com/user/{}/","Telegram":"https://t.me/{}","Pinterest":"https://www.pinterest.com/{}/"}
@@ -11,11 +11,16 @@ def home():
 @app.route('/api/username/<u>')
 def check_user(u):
     res=[]
+    headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     for p,url in SITES.items():
         link=url.format(u)
         try:
-            ok=requests.get(link,headers={"User-Agent":"Mozilla/5.0"},timeout=5).status_code==200
-            s="FOUND" if ok else "Not Found"
+            r=requests.get(link,headers=headers,timeout=6,allow_redirects=True)
+            # More accurate check
+            if r.status_code==200 and "not found" not in r.text.lower() and "sorry" not in r.text.lower()[:500].lower():
+                s="FOUND"
+            else:
+                s="Not Found"
         except:
             s="Error"
         res.append({"platform":p,"url":link,"status":s})
@@ -25,28 +30,28 @@ def check_user(u):
 @app.route('/api/email/<path:email>')
 def check_email(email):
     email=email.strip().lower()
+    safe_email=urllib.parse.quote(email)
     md5=hashlib.md5(email.encode()).hexdigest()
-    # Legal OSINT footprint links
     footprints = [
-        {"platform":"Gravatar","url":f"https://www.gravatar.com/{md5}","desc":"Profile photo linked to email"},
-        {"platform":"Google Search","url":f"https://www.google.com/search?q=%22{email}%22","desc":"Public pages mentioning email"},
-        {"platform":"GitHub Commits","url":f"https://github.com/search?q={email}&type=commits","desc":"Code commits using this email"},
-        {"platform":"HaveIBeenPwned Check","url":f"https://haveibeenpwned.com/account/{email}","desc":"Check if email was in public breach"},
-        {"platform":"Paste Search","url":f"https://www.google.com/search?q=site:pastebin.com+%22{email}%22","desc":"Public pastes with email"},
+        {"platform":"Gravatar","url":f"https://www.gravatar.com/avatar/{md5}","desc":"Profile photo linked to email"},
+        {"platform":"Google Search","url":f"https://www.google.com/search?q=%22{safe_email}%22","desc":"Public pages mentioning email"},
+        {"platform":"GitHub Commits","url":f"https://github.com/search?q={safe_email}&type=commits","desc":"Code commits using this email"},
+        {"platform":"HaveIBeenPwned","url":f"https://haveibeenpwned.com/account/{safe_email}","desc":"Check if email was in breach"},
+        {"platform":"Paste Search","url":f"https://www.google.com/search?q=site%3Apastebin.com+%22{safe_email}%22","desc":"Public pastes"},
     ]
     return jsonify({
         "email":email,
         "gravatar_url":f"https://www.gravatar.com/avatar/{md5}?d=identicon&s=200",
         "footprints": footprints,
-        "risk": "HIGH" if len(email)>0 else "LOW"
+        "risk":"HIGH"
     })
 
 @app.route('/api/domain/<domain>')
 def check_domain(domain):
     try:
         ip=socket.gethostbyname(domain)
-        info={"domain":domain,"ip":ip,"host_info":f"https://who.is/whois/{domain}","shodan":f"https://www.shodan.io/search?query={domain}","google_sites":f"https://www.google.com/search?q=site%3A{domain}"}
-        return jsonify(info)
+        safe=urllib.parse.quote(domain)
+        return jsonify({"domain":domain,"ip":ip,"host_info":f"https://who.is/whois/{domain}","shodan":f"https://www.shodan.io/search?query={safe}"})
     except Exception as e:
         return jsonify({"error":str(e)})
 
